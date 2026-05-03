@@ -20,7 +20,7 @@ class AppThemes {
       bodyLarge: GoogleFonts.inter(fontWeight: FontWeight.w300, color: AppColors.textPrimary),
       bodyMedium: GoogleFonts.inter(fontWeight: FontWeight.w300, color: AppColors.textSecondary),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: AppColors.glassBackground,
       elevation: 0,
       shape: RoundedRectangleBorder(
