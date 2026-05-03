@@ -7,33 +7,26 @@ class AppThemes {
     brightness: Brightness.dark,
     scaffoldBackgroundColor: AppColors.background,
     primaryColor: AppColors.accentCyan,
-    colorScheme: ColorScheme.dark(
+    colorScheme: const ColorScheme.dark(
       primary: AppColors.accentCyan,
       secondary: AppColors.accentPurple,
       surface: AppColors.surface,
     ),
-    textTheme: GoogleFonts.outfitTextTheme(
-      ThemeData.dark().textTheme.apply(
-        bodyColor: AppColors.textPrimary,
-        displayColor: AppColors.textPrimary,
-      ),
+    textTheme: GoogleFonts.interTextTheme(
+      ThemeData.dark().textTheme,
+    ).copyWith(
+      displayLarge: GoogleFonts.inter(fontWeight: FontWeight.w200, color: AppColors.textPrimary),
+      displayMedium: GoogleFonts.inter(fontWeight: FontWeight.w200, color: AppColors.textPrimary),
+      bodyLarge: GoogleFonts.inter(fontWeight: FontWeight.w300, color: AppColors.textPrimary),
+      bodyMedium: GoogleFonts.inter(fontWeight: FontWeight.w300, color: AppColors.textSecondary),
     ),
-    cardTheme: CardThemeData(
-      color: AppColors.surface,
+    cardTheme: CardTheme(
+      color: AppColors.glassBackground,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: Colors.white10),
+        borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: AppColors.glassBorder),
       ),
     ),
-  );
-
-  static ThemeData ghostTheme = darkTheme.copyWith(
-    primaryColor: AppColors.accentPurple,
-    colorScheme: darkTheme.colorScheme.copyWith(
-      primary: AppColors.accentPurple,
-      secondary: AppColors.accentCyan,
-    ),
-    scaffoldBackgroundColor: Color(0xFF100020), // Dark thermal purple
   );
 }

@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color background = Color(0xFF0A0A0A);
-  static const Color surface = Color(0xFF1A1A1A);
-  static const Color accentCyan = Color(0xFF00E5FF);
-  static const Color accentPurple = Color(0xFFBF00FF);
-  static const Color neonCyan = Color(0xFF00FFFF);
-  static const Color glassWhite = Color(0x1AFFFFFF);
-  static const Color textPrimary = Colors.white;
-  static const Color textSecondary = Colors.white70;
+  static const Color background = Color(0xFF000000);
+  static const Color surface = Color(0xFF0A0A0A);
+  static const Color accentCyan = Color(0xFF00F2FF);
+  static const Color accentPurple = Color(0xFFC084FC);
+  static const Color glassBorder = Color(0x33FFFFFF);
+  static const Color glassBackground = Color(0x0DFFFFFF);
+  static const Color textPrimary = Color(0xFFF8FAFC);
+  static const Color textSecondary = Color(0xFF94A3B8);
   
-  static const LinearGradient cyanGradient = LinearGradient(
-    colors: [Color(0xFF00E5FF), Color(0xFF00B2FF)],
+  static const LinearGradient premiumGradient = LinearGradient(
+    colors: [Color(0xFF00F2FF), Color(0xFF0061FF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
-  static const LinearGradient purpleGradient = LinearGradient(
-    colors: [Color(0xFFBF00FF), Color(0xFF7B00FF)],
+  static const LinearGradient ghostGradient = LinearGradient(
+    colors: [Color(0xFFC084FC), Color(0xFF6366F1)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

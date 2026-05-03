@@ -28,7 +28,7 @@ class _LiquidDropletState extends State<LiquidDroplet> with SingleTickerProvider
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 4),
     )..repeat();
   }
 
@@ -40,18 +40,23 @@ class _LiquidDropletState extends State<LiquidDroplet> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return CustomPaint(
-          size: const Size(300, 300),
-          painter: DropletPainter(
-            x: widget.x,
-            y: widget.y,
-            z: widget.z,
-            intensity: widget.intensity,
-            phase: _controller.value * 2 * math.pi,
-          ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = math.min(constraints.maxWidth, constraints.maxHeight);
+        return AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return CustomPaint(
+              size: Size(size, size),
+              painter: DropletPainter(
+                x: widget.x,
+                y: widget.y,
+                z: widget.z,
+                intensity: widget.intensity,
+                phase: _controller.value * 2 * math.pi,
+              ),
+            );
+          },
         );
       },
     );
@@ -76,36 +81,51 @@ class DropletPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final baseRadius = 80.0 + (intensity * 0.2);
+    // Base radius is responsive
+    final baseRadius = (size.width * 0.25) + (intensity * 0.05).clamp(0, size.width * 0.1);
     
     final paint = Paint()
       ..shader = RadialGradient(
         colors: [
-          Colors.white,
-          AppColors.accentCyan.withOpacity(0.8),
-          Colors.black.withOpacity(0.5),
+          Colors.white.withOpacity(0.9),
+          AppColors.accentCyan.withOpacity(0.4),
+          Colors.black.withOpacity(0.0),
         ],
-        stops: const [0.0, 0.4, 1.0],
-        center: Alignment(-0.3, -0.3),
+        stops: const [0.0, 0.6, 1.0],
+        center: const Alignment(-0.2, -0.3),
       ).createShader(Rect.fromCircle(center: center, radius: baseRadius * 1.5))
-      ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 2);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 1);
 
     final path = Path();
-    const pointsCount = 60;
+    const pointsCount = 90; // Higher fidelity
+    
+    // Normalize field for direction pull
+    // Magnetic field values are typically -100 to 100
+    double pullX = (x / 100.0).clamp(-1.0, 1.0);
+    double pullY = (y / 100.0).clamp(-1.0, 1.0);
     
     for (var i = 0; i <= pointsCount; i++) {
       final angle = (i / pointsCount) * 2 * math.pi;
       
-      // Calculate distortion based on magnetometer axes
-      // We pull the droplet in the direction of the field
-      double dx = x / 100.0;
-      double dy = y / 100.0;
-      
       // Organic fluctuation
-      double wave = math.sin(angle * 3 + phase) * (5 + intensity * 0.1);
-      double radialDistortion = (dx * math.cos(angle) + dy * math.sin(angle)) * baseRadius * 0.5;
+      double wave1 = math.sin(angle * 4 + phase) * 3;
+      double wave2 = math.cos(angle * 3 - phase * 0.5) * 2;
       
-      final r = baseRadius + wave + radialDistortion;
+      // Pull logic: Stronger distortion in the direction of the field
+      // We project the pull vector onto the radial vector at this angle
+      double radialVectorX = math.cos(angle);
+      double radialVectorY = math.sin(angle);
+      
+      // Dot product shows how much this point is aligned with the pull direction
+      double pullAlignment = (pullX * radialVectorX + pullY * radialVectorY);
+      
+      // We only "pull" if aligned, creating a teardrop/stretch effect
+      double pullDistortion = 0.0;
+      if (pullAlignment > 0) {
+        pullDistortion = pullAlignment * pullAlignment * baseRadius * 0.6 * (intensity / 100).clamp(0, 1.5);
+      }
+      
+      final r = baseRadius + wave1 + wave2 + pullDistortion;
       
       final px = center.dx + r * math.cos(angle);
       final py = center.dy + r * math.sin(angle);
@@ -118,17 +138,31 @@ class DropletPainter extends CustomPainter {
     }
     path.close();
 
-    // Draw shadow
-    canvas.drawShadow(path.shift(const Offset(10, 10)), Colors.black, 15, true);
+    // Subtle glow
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = AppColors.accentCyan.withOpacity(0.1)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 30),
+    );
     
-    // Draw the main droplet
+    // Main droplet body
     canvas.drawPath(path, paint);
-
-    // Glow effect
-    final glowPaint = Paint()
-      ..color = AppColors.accentCyan.withOpacity(0.2 * (intensity / 100).clamp(0, 1))
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
-    canvas.drawPath(path, glowPaint);
+    
+    // Specular highlight for liquid look
+    final highlightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
+    
+    canvas.drawArc(
+      Rect.fromCircle(center: center.translate(-baseRadius*0.2, -baseRadius*0.2), radius: baseRadius * 0.6),
+      -math.pi * 0.7,
+      math.pi * 0.4,
+      false,
+      highlightPaint,
+    );
   }
 
   @override

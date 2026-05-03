@@ -1,6 +1,7 @@
-import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:pro/core/constants/app_colors.dart';
 import 'package:pro/core/services/sensor_service.dart';
 import 'package:pro/core/services/haptic_service.dart';
@@ -36,6 +37,7 @@ class _HomePageState extends State<HomePage> {
     _sensorService.startListening();
     _sensorService.magneticStream.listen((data) {
       if (!_isCalibrated) return;
+      if (!mounted) return;
       setState(() {
         _current = data;
         _history.add(data);
@@ -48,13 +50,11 @@ class _HomePageState extends State<HomePage> {
 
         _levelingSystem.addExperience(data.intensity);
 
-        // Haptics
         if (data.intensity > 60) {
           double normIntensity = ((data.intensity - 60) / 200).clamp(0, 1);
           HapticService.heartbeat(normIntensity);
         }
 
-        // Smart Flashlight
         if (_ghostMode && data.intensity > 150) {
           FlashlightService.toggle(true);
         } else if (data.intensity < 100) {
@@ -80,54 +80,69 @@ class _HomePageState extends State<HomePage> {
       );
     }
     
-    final theme = Theme.of(context);
     final accentColor = _ghostMode ? AppColors.accentPurple : AppColors.accentCyan;
 
     return Scaffold(
-      backgroundColor: _ghostMode ? const Color(0xFF100020) : AppColors.background,
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Background Glow
-          Positioned(
-            top: -100,
-            left: -100,
+          // Ambient Glow
+          Positioned.fill(
             child: Container(
-              width: 400,
-              height: 400,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: accentColor.withOpacity(0.05),
+                gradient: RadialGradient(
+                  center: Alignment.center,
+                  radius: 1.5,
+                  colors: [
+                    accentColor.withOpacity(0.05),
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
-          ).animate().fadeIn(duration: 2.seconds),
+          ),
 
           // 3D Point Cloud Background
           Positioned.fill(
             child: Opacity(
-              opacity: 0.3,
+              opacity: 0.2,
               child: PointCloudVisualizer(history: _history),
             ),
           ),
 
           SafeArea(
-            child: Column(
-              children: [
-                _buildHeader(accentColor),
-                const Spacer(),
-                _buildMainDisplay(accentColor),
-                const Spacer(),
-                _buildDetectionInfo(),
-                _buildBottomPanel(),
-                _buildAdPlaceholder(),
-              ],
-            ),
-          ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                bool isShort = constraints.maxHeight < 600;
+                
+                return Column(
+                  children: [
+                    _buildHeader(accentColor),
+                    
+                    Expanded(
+                      flex: 3,
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 400, maxHeight: 400),
+                          child: LiquidDroplet(
+                            x: _current?.x ?? 0,
+                            y: _current?.y ?? 0,
+                            z: _current?.z ?? 0,
+                            intensity: _current?.intensity ?? 0,
+                          ),
+                        ),
+                      ),
+                    ),
 
-          // Ghost Mode Toggle Overlay
-          Positioned(
-            top: 60,
-            right: 20,
-            child: _buildGhostToggle(),
+                    _buildDetectionPanel(accentColor, isShort),
+                    
+                    _buildBottomControl(accentColor),
+                    
+                    _buildAdPlaceholder(),
+                  ],
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -136,7 +151,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildHeader(Color accentColor) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.all(24),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -144,113 +159,128 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'FLUX FINDER',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
+                'FLUXFINDER',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 4,
                   color: accentColor,
                 ),
-              ),
+              ).animate().fadeIn(duration: 800.ms).slideX(begin: -0.2),
+              const SizedBox(height: 4),
               Text(
-                _levelingSystem.rank,
-                style: const TextStyle(color: Colors.white54, fontSize: 12),
+                _levelingSystem.rank.toUpperCase(),
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 1,
+                  color: Colors.white38,
+                ),
               ),
             ],
           ),
-          CircleAvatar(
-            backgroundColor: AppColors.glassWhite,
-            child: Icon(LucideIcons.user, color: accentColor, size: 20),
-          ),
+          _buildGhostToggle(),
         ],
       ),
     );
   }
 
-  Widget _buildMainDisplay(Color accentColor) {
-    return Center(
-      child: LiquidDroplet(
-        x: _current?.x ?? 0,
-        y: _current?.y ?? 0,
-        z: _current?.z ?? 0,
-        intensity: _current?.intensity ?? 0,
-      ),
-    );
-  }
-
-  Widget _buildDetectionInfo() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+  Widget _buildDetectionPanel(Color accentColor, bool isShort) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(vertical: isShort ? 8 : 16),
       child: Column(
         children: [
           Text(
             AIClassifier.getMaterialName(_detectedMaterial).toUpperCase(),
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: _detectedMaterial != MagneticMaterialType.none ? AppColors.accentCyan : Colors.white24,
-              letterSpacing: 1.5,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 2,
+              color: _detectedMaterial != MagneticMaterialType.none ? accentColor : Colors.white24,
             ),
           ).animate(target: _detectedMaterial != MagneticMaterialType.none ? 1 : 0)
-           .shimmer(color: Colors.white, duration: 1.seconds),
+           .shimmer(color: Colors.white54),
+          
           const SizedBox(height: 8),
+          
           Text(
-            '${_current?.intensity.toStringAsFixed(1) ?? '0.0'} μT',
-            style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w300),
+            '${_current?.intensity.toStringAsFixed(1) ?? '0.0'}',
+            style: GoogleFonts.inter(
+              fontSize: isShort ? 42 : 64,
+              fontWeight: FontWeight.w100,
+              color: Colors.white,
+            ),
+          ),
+          
+          Text(
+            'MICRO TESLA',
+            style: GoogleFonts.inter(
+              fontSize: 10,
+              fontWeight: FontWeight.w300,
+              letterSpacing: 4,
+              color: Colors.white38,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBottomPanel() {
+  Widget _buildBottomControl(Color accentColor) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(2),
+      margin: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [Colors.white10, Colors.transparent]),
-        borderRadius: BorderRadius.circular(24),
+        color: AppColors.glassBackground,
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(color: AppColors.glassBorder),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppColors.surface.withOpacity(0.8),
-          borderRadius: BorderRadius.circular(22),
-        ),
-        child: Column(
-          children: [
-            SizedBox(
-              height: 100,
-              child: MagneticGraph(history: _history),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildToolButton(LucideIcons.activity, 'SCAN'),
-                _buildToolButton(LucideIcons.map, 'MAP'),
-                _buildToolButton(LucideIcons.settings, 'CAL'),
-              ],
-            ),
-          ],
+      clipBehavior: Clip.antiAlias,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                height: 60,
+                child: MagneticGraph(history: _history),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildIconButton(LucideIcons.scan, 'AUTO', true, accentColor),
+                  _buildIconButton(LucideIcons.target, 'LOCK', false, accentColor),
+                  _buildIconButton(LucideIcons.settings, 'CAL', false, accentColor),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildToolButton(IconData icon, String label) {
+  Widget _buildIconButton(IconData icon, String label, bool isActive, Color accentColor) {
     return Column(
       children: [
         Container(
-          padding: const EdgeInsets.all(12),
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
-            color: AppColors.glassWhite,
+            color: isActive ? accentColor.withOpacity(0.1) : Colors.transparent,
             shape: BoxShape.circle,
+            border: Border.all(color: isActive ? accentColor.withOpacity(0.5) : Colors.white10),
           ),
-          child: Icon(icon, size: 20),
+          child: Icon(icon, size: 18, color: isActive ? accentColor : Colors.white60),
         ),
-        const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.white54)),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w500, color: isActive ? Colors.white : Colors.white38),
+        ),
       ],
     );
   }
@@ -258,31 +288,39 @@ class _HomePageState extends State<HomePage> {
   Widget _buildGhostToggle() {
     return GestureDetector(
       onTap: () => setState(() => _ghostMode = !_ghostMode),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: _ghostMode ? AppColors.accentPurple.withOpacity(0.2) : AppColors.glassWhite,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: _ghostMode ? AppColors.accentPurple : Colors.white10),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              _ghostMode ? LucideIcons.ghost : LucideIcons.zap,
-              size: 16,
-              color: _ghostMode ? AppColors.accentPurple : Colors.white,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: AnimatedContainer(
+            duration: 300.ms,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: _ghostMode ? AppColors.accentPurple.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _ghostMode ? AppColors.accentPurple.withOpacity(0.5) : Colors.white10),
             ),
-            const SizedBox(width: 8),
-            Text(
-              _ghostMode ? 'GHOST' : 'NORMAL',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: _ghostMode ? AppColors.accentPurple : Colors.white,
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _ghostMode ? LucideIcons.ghost : LucideIcons.zap,
+                  size: 14,
+                  color: _ghostMode ? AppColors.accentPurple : Colors.white60,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _ghostMode ? 'GHOST' : 'CORE',
+                  style: GoogleFonts.inter(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1,
+                    color: _ghostMode ? AppColors.accentPurple : Colors.white60,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -290,14 +328,12 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildAdPlaceholder() {
     return Container(
-      height: 60,
+      height: 50,
       width: double.infinity,
-      color: Colors.black26,
-      child: Center(
-        child: Text(
-          'AD BANNER PLACEHOLDER',
-          style: TextStyle(color: Colors.white24, fontSize: 10),
-        ),
+      alignment: Alignment.center,
+      child: Text(
+        'FLUX AD NETWORK • SECURE CONNECTION',
+        style: GoogleFonts.inter(fontSize: 8, color: Colors.white10, letterSpacing: 2),
       ),
     );
   }

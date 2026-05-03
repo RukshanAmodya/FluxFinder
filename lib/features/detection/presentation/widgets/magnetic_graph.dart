@@ -10,28 +10,20 @@ class MagneticGraph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 200,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.glassWhite,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+    return LineChart(
+      LineChartData(
+        minY: -100,
+        maxY: 100,
+        gridData: const FlGridData(show: false),
+        titlesData: const FlTitlesData(show: false),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          _buildLine(history.map((d) => d.x).toList(), Colors.white.withOpacity(0.1)),
+          _buildLine(history.map((d) => d.y).toList(), Colors.white.withOpacity(0.2)),
+          _buildLine(history.map((d) => d.z).toList(), AppColors.accentCyan.withOpacity(0.4)),
+        ],
       ),
-      child: LineChart(
-        LineChartData(
-          minY: -100,
-          maxY: 100,
-          gridData: FlGridData(show: true, drawVerticalLine: false, getDrawingHorizontalLine: (value) => FlLine(color: Colors.white10, strokeWidth: 1)),
-          titlesData: FlTitlesData(show: false),
-          borderData: FlBorderData(show: false),
-          lineBarsData: [
-            _buildLine(history.map((d) => d.x).toList(), Colors.redAccent),
-            _buildLine(history.map((d) => d.y).toList(), Colors.greenAccent),
-            _buildLine(history.map((d) => d.z).toList(), Colors.blueAccent),
-          ],
-        ),
-      ),
+      duration: const Duration(milliseconds: 0),
     );
   }
 
@@ -40,9 +32,9 @@ class MagneticGraph extends StatelessWidget {
       spots: values.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value)).toList(),
       isCurved: true,
       color: color,
-      barWidth: 2,
+      barWidth: 1,
       isStrokeCapRound: true,
-      dotData: FlDotData(show: false),
+      dotData: const FlDotData(show: false),
       belowBarData: BarAreaData(show: false),
     );
   }
