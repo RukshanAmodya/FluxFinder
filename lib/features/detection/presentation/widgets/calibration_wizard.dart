@@ -47,7 +47,7 @@ class _CalibrationWizardState extends State<CalibrationWizard> with SingleTicker
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black92,
+      color: const Color(0xEB000000),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

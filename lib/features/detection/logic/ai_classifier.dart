@@ -1,4 +1,4 @@
-enum MaterialType {
+enum MagneticMaterialType {
   none,
   ferrous,
   acLiveWire,
@@ -8,8 +8,8 @@ enum MaterialType {
 class AIClassifier {
   static const double baseField = 45.0; // Typical earth magnetic field
   
-  static MaterialType classify(double intensity, List<double> history) {
-    if (intensity < baseField + 5) return MaterialType.none;
+  static MagneticMaterialType classify(double intensity, List<double> history) {
+    if (intensity < baseField + 5) return MagneticMaterialType.none;
     
     // Simple logic for demonstration
     // If intensity is very high and stable-ish, it's likely metal
@@ -18,14 +18,14 @@ class AIClassifier {
     double variance = _calculateVariance(history);
     
     if (intensity > 150) {
-      return MaterialType.ferrous;
+      return MagneticMaterialType.ferrous;
     } else if (variance > 10.0) {
-      return MaterialType.acLiveWire;
+      return MagneticMaterialType.acLiveWire;
     } else if (intensity > 60) {
-      return MaterialType.electronicInterference;
+      return MagneticMaterialType.electronicInterference;
     }
     
-    return MaterialType.none;
+    return MagneticMaterialType.none;
   }
 
   static double _calculateVariance(List<double> data) {
@@ -35,13 +35,13 @@ class AIClassifier {
     return sumSquaredDiff / data.length;
   }
 
-  static String getMaterialName(MaterialType type) {
+  static String getMaterialName(MagneticMaterialType type) {
     switch (type) {
-      case MaterialType.ferrous:
+      case MagneticMaterialType.ferrous:
         return 'Ferrous Metal (Iron)';
-      case MaterialType.acLiveWire:
+      case MagneticMaterialType.acLiveWire:
         return 'Live Wires (AC)';
-      case MaterialType.electronicInterference:
+      case MagneticMaterialType.electronicInterference:
         return 'Electronic Interference';
       default:
         return 'Scanning...';

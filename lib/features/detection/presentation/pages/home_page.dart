@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
   MagneticData? _current;
   bool _ghostMode = false;
   bool _isCalibrated = false;
-  MaterialType _detectedMaterial = MaterialType.none;
+  MagneticMaterialType _detectedMaterial = MagneticMaterialType.none;
 
   @override
   void initState() {
@@ -188,10 +188,10 @@ class _HomePageState extends State<HomePage> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w900,
-              color: _detectedMaterial != MaterialType.none ? AppColors.accentCyan : Colors.white24,
+              color: _detectedMaterial != MagneticMaterialType.none ? AppColors.accentCyan : Colors.white24,
               letterSpacing: 1.5,
             ),
-          ).animate(target: _detectedMaterial != MaterialType.none ? 1 : 0)
+          ).animate(target: _detectedMaterial != MagneticMaterialType.none ? 1 : 0)
            .shimmer(color: Colors.white, duration: 1.seconds),
           const SizedBox(height: 8),
           Text(
